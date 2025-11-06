@@ -372,7 +372,7 @@
         <!-- 8. Rejestr Spraw -->
         <div id="rejestr" class="tab">
             <h2>Rejestr Otwartych Spraw</h2>
-            <p>Poniżej znajduje się lista wszystkich złożonych wniosków o wszczęcie postępowania. Dane są tymczasowo zapisane w Twojej przeglądarce, co pozwala na ich szybkie podglądanie.</p>
+            <p>Poniżej znajduje się lista wszystkich złożonych wniosków o wszczęcie postępowania. Dane są tymczasowo zapisane w Twojej przeglądarce, co pozwala na ich szybki podglądanie.</p>
             <ul id="rejestr-spraw-list"></ul>
             <p id="brakSprawInfo" style="text-align: center; color: #6e7681;">Brak spraw w rejestrze.</p>
         </div>
@@ -380,19 +380,18 @@
     </div>
     <script>
         // === WEBHOOKS ===
-        // Zastąp webhookNiekaralnosc swoim webhookiem. Pozostałe pozostają z oryginalnego pliku.
         const webhookWnioski = 'https://discord.com/api/webhooks/1412788434648694804/n60lhu1ldk_rwms5f7TCE5XE3JO8XM-TZ4zReqem8dKynqoohH5_e4HFuInINYiVDCnd'; 
         const webhookWyroki = 'https://discord.com/api/webhooks/1403681144029057074/qWog2W1UxsgQp1P_IzmI0sqjmXtC7ZD4Fw3XsGhLX39AFaW31cyTC1Y0bNh6AfeqXy8c';
         const webhookUlaskawienia = 'https://discord.com/api/webhooks/1412788603393937458/dhJlRuToV9hjVIyH91uUrVeJVa0NI_vfCHqZxMoBQ6DprTSdfwvcYhq02-jznxaPKShZ';
         const webhookRaporty = 'https://discord.com/api/webhooks/1405288179946225786/lHbPOsqW_TqXoK8Xg8mm-tzDqcQz7OENFmJZzMwKOgbW-PEqgePP0oDOfLsWLIxPNGX4';
         const webhookDowody = 'https://discord.com/api/webhooks/1412788739679191162/xPfERk9Otx7WvIUc8O-KX3WYN8roBqMinNM4QrEr9yz81YsZWVI2eNW5xOUWvsLBBpJw';
         const webhookKalendarz = 'https://discord.com/api/webhooks/1412788883456000010/JV1VXEk7Us62pT2kpP_UmEugibLN7hSIwCrpkda_8Fizt5QNuzBgLl8PbbdyIqlEI7kd';
-        const webhookNiekaralnosc = 'https://discord.com/api/webhooks/1436052645050847323/UcMnnZg3T6AiZ5G0X0qjke2catC2gUlFCcuZRBOWm9ndAwceqBVbxqiNmjUE5crpQEl4'; // <-- wpisz swój webhook
+        // Dwa webhooki dla niekaralności (ta sama wiadomość trafi do obu)
+        const webhookNiekaralnosc1 = 'https://discord.com/api/webhooks/1436052645050847323/UcMnnZg3T6AiZ5G0X0qjke2catC2gUlFCcuZRBOWm9ndAwceqBVbxqiNmjUE5crpQEl4';
+        const webhookNiekaralnosc2 = 'https://discord.com/api/webhooks/1436092452867149956/NChLgqn7b379Hf7WBDd0mJX_-WtpsnouApwDdSeGB39PfEjbZ109UQ0QGiExbg3pnoHd';
 
-        // lastCaseNumber używany dla automatycznego numeru sprawy w Wniosku
         let lastCaseNumber = localStorage.getItem('lastCaseNumber') ? parseInt(localStorage.getItem('lastCaseNumber')) : 123;
 
-        // Funkcja do przełączania zakładek (poprawiona - event przekazywany z onclick)
         function showTab(event, id) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -404,7 +403,6 @@
             }
         }
 
-        // status helper
         function setStatus(elementId, message, isSuccess) {
             const statusElement = document.getElementById(elementId);
             statusElement.textContent = message;
@@ -414,7 +412,6 @@
             }
         }
 
-        // wysyłka embedów na Discord (z obsługą błędów)
         async function wyslijWebhook(url, embed) {
             const body = JSON.stringify({ embeds: [embed] });
             const response = await fetch(url, {
@@ -423,12 +420,11 @@
                 body: body
             });
             if(!response.ok) {
-                const txt = await response.text().catch(()=> '');
+                const txt = await response.text().catch(()=>'');
                 throw new Error(`Błąd sieci: ${response.status} ${response.statusText} ${txt}`);
             }
         }
 
-        // Rejestr Spraw - funkcje
         function saveCaseToRegister(caseData) {
             let cases = JSON.parse(localStorage.getItem('caseRegister')) || [];
             cases.push(caseData);
@@ -461,14 +457,12 @@
             }
         }
 
-        // Uruchomienie rejestru po załadowaniu strony i ustawienie domyślnego numeru sprawy
         document.addEventListener('DOMContentLoaded', () => {
             renderCaseRegister();
             const rok = new Date().getFullYear().toString().substr(-2);
             document.getElementById('caseNumberWniosek').value = `WO/S/${rok}/${lastCaseNumber+1}`;
         });
 
-        // === GENERATOR NUMERU EWIDENCYJNEGO (sekwencyjny w localStorage) ===
         function generujNumerEwidencyjny(prefix) {
             const rok = new Date().getFullYear();
             const key = `counter_${prefix}_${rok}`;
@@ -478,8 +472,6 @@
             const padded = String(counter).padStart(5, '0');
             return `${prefix}-${rok}-${padded}`;
         }
-
-        // === Formularze ===
 
         // Wniosek
         document.getElementById('wniosekForm').addEventListener('submit', async e => {
@@ -499,7 +491,7 @@
                 const opisSprawy = document.getElementById('opisSprawyWniosek').value.trim();
                 const wnioski = document.getElementById('wnioskiWniosek').value.trim();
 
-                const numerEw = generujNumerEwidencyjny('WN'); // numer ewidencyjny dla wniosku
+                const numerEw = generujNumerEwidencyjny('WN');
 
                 const embed = {
                     title: ":scroll: WNIOSEK O WSZCZĘCIE POSTĘPOWANIA",
@@ -519,7 +511,6 @@
 
                 await wyslijWebhook(webhookWnioski, embed);
 
-                // Zapisz sprawę w lokalnym rejestrze
                 saveCaseToRegister({
                     caseNumber: caseNumber,
                     numerEwidencyjny: numerEw,
@@ -529,12 +520,10 @@
                 });
                 localStorage.setItem('lastCaseNumber', lastCaseNumber);
 
-
                 setStatus('statusWniosek', 'Wniosek został pomyślnie wysłany! Numer sprawy: ' + caseNumber, true);
                 e.target.reset();
                 const rokNew = new Date().getFullYear().toString().substr(-2);
                 document.getElementById('caseNumberWniosek').value = `WO/S/${rokNew}/${lastCaseNumber+1}`;
-
 
             } catch(err) {
                 setStatus('statusWniosek', 'Błąd podczas wysyłania wniosku: ' + err.message, false);
@@ -555,7 +544,7 @@
                 const wymiarKary = document.getElementById('wymiarKary').value.trim() || 'Uniewinniono';
                 const uzasadnienie = document.getElementById('uzasadnienieWyrok').value.trim();
 
-                const numerEw = generujNumerEwidencyjny('WY'); // ewidencyjny dla wyroku
+                const numerEw = generujNumerEwidencyjny('WY');
 
                 const embed = {
                     title: ":hammer: WYROK SĄDOWY",
@@ -592,7 +581,7 @@
                 const caseNumber = document.getElementById('caseNumberUlaskawienie').value.trim();
                 const uzasadnienie = document.getElementById('uzasadnienieUlaskawienie').value.trim();
 
-                const numerEw = generujNumerEwidencyjny('UL'); // ewidencyjny dla ułaskawienia
+                const numerEw = generujNumerEwidencyjny('UL');
 
                 const embed = {
                     title: ":scroll: WNIOSEK O UŁASKAWIENIE",
@@ -627,7 +616,7 @@
                 const uczestnicy = document.getElementById('uczestnicyRaport').value.trim();
                 const przebieg = document.getElementById('przebiegRaport').value.trim();
 
-                const numerEw = generujNumerEwidencyjny('RP'); // ewidencyjny dla raportu
+                const numerEw = generujNumerEwidencyjny('RP');
 
                 const embed = {
                     title: ":clipboard: RAPORT Z ROZPRAWY",
@@ -671,7 +660,7 @@
                     linkField = "Brak linków.";
                 }
 
-                const numerEw = generujNumerEwidencyjny('DW'); // ewidencyjny dla dowodów
+                const numerEw = generujNumerEwidencyjny('DW');
 
                 const embed = {
                     title: ":page_with_curl: ZŁOŻENIE DOWODÓW",
@@ -715,7 +704,7 @@
                     minute: '2-digit'
                 });
 
-                const numerEw = generujNumerEwidencyjny('KL'); // ewidencyjny dla kalendarza
+                const numerEw = generujNumerEwidencyjny('KL');
 
                 const embed = {
                     title: ":calendar: PLANOWANA ROZPRAWA",
@@ -740,7 +729,7 @@
             }
         });
 
-        // Niekaralnosc (Zaświadczenie)
+        // Niekaralnosc (Zaświadczenie) - teraz wysyła na 2 webhooki
         document.getElementById('niekaralnoscForm').addEventListener('submit', async e => {
             e.preventDefault();
             setStatus('statusNiekaralnosc', 'Wysyłam zaświadczenie...', null);
@@ -769,8 +758,14 @@
                     timestamp: new Date().toISOString(),
                 };
 
-                // Wyślij na webhook (upewnij się, że podmieniłeś webhookNiekaralnosc)
-                await wyslijWebhook(webhookNiekaralnosc, embed);
+                // Wyślij jednocześnie na oba webhooki
+                const sendPromises = [
+                    wyslijWebhook(webhookNiekaralnosc1, embed),
+                    wyslijWebhook(webhookNiekaralnosc2, embed)
+                ];
+
+                // Poczekaj na obie odpowiedzi (jeśli jeden z webhooków zwróci błąd, Promise.all się odrzuci)
+                await Promise.all(sendPromises);
 
                 // Zapisz do rejestru lokalnego
                 saveCaseToRegister({
@@ -780,9 +775,10 @@
                     opis: `Zaświadczenie: ${cel}`
                 });
 
-                setStatus('statusNiekaralnosc', 'Zaświadczenie o niekaralności zostało wysłane. Numer ewidencyjny: ' + certNumber, true);
+                setStatus('statusNiekaralnosc', 'Zaświadczenie o niekaralności zostało wysłane na oba webhooki. Numer ewidencyjny: ' + certNumber, true);
                 e.target.reset();
             } catch(err) {
+                // jeśli któryś z webhooków padnie, pokaż szczegół błędu
                 setStatus('statusNiekaralnosc', 'Błąd podczas wysyłania zaświadczenia: ' + err.message, false);
             }
         });
